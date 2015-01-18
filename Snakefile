@@ -9,17 +9,16 @@ except:
 module_config = {
 	"name": "lua-patch",
 	"module": {
+		"dir": "dmc_lua",
 		"files": [
 			"lua_patch.lua"
 		],
-		"requires": [
-		]
+		"requires": []
 	},
 	"tests": {
-		"files": [
-		],
-		"requires": [
-		]
+		"dir": "spec",
+		"files": [],
+		"requires": []
 	}
 }
 
