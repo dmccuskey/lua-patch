@@ -128,4 +128,67 @@ describe( "Module Test: lua_patch.lua", function()
 	end)
 
 
+
+	describe( "Tests for the module", function()
+
+		after_each( function()
+			Patch.removeAllPatches()
+		end)
+
+		it( "exports its version", function()
+			assert.are.equal( '0.4.0', Patch.__version )
+		end)
+
+		it( "removeAllPatches() turns every patch off", function()
+			Patch.addAllPatches()
+			assert.is_function( table.pop )
+			assert.is_function( pnotice )
+
+			Patch.removeAllPatches()
+
+			assert.is_nil( table.pop )
+			assert.is_nil( rawget( _G, 'pnotice' ) )
+			assert.is_nil( rawget( _G, 'pwarn' ) )
+			assert.error( function() local var = "%s" % 'x' end )
+		end)
+
+		it( "removePatch() with no argument turns off print-output too", function()
+			Patch.addPatch()
+			Patch.removePatch()
+			assert.is_nil( rawget( _G, 'pwarn' ) )
+		end)
+
+		it( "names an unknown patch in the error", function()
+			assert.has_error( function() Patch.addPatch( 'no-such' ) end,
+				"Lua Patch:: unknown patch name 'no-such'" )
+			assert.has_error( function() Patch.removePatch( { 'no-such' } ) end,
+				"Lua Patch:: unknown patch name 'no-such'" )
+			assert.has_error( function() Patch.addPatch( 42 ) end,
+				"Lua Patch:: unknown patch type 'number'" )
+		end)
+
+		it( "string-format passes the values after a nil", function()
+			Patch.addPatch( 'string-format' )
+			local values = {}
+			values[1], values[3] = 1, 3 -- #values is 1
+			local format, count = string.format, nil
+			string.format = function( fmt, ... ) count = select( '#', ... ) return fmt end
+			local _ = "%s %s %s" % values
+			string.format = format
+			assert.are.equal( 3, count )
+		end)
+
+		it( "print-output marks the message", function()
+			local print, lines = _G.print, {}
+			_G.print = function( s ) lines[#lines+1] = s end
+			Patch.addPatch( 'print-output' )
+			pnotice( "hi" )
+			pwarn( 42, { newline=false } )
+			_G.print = print
+			assert.are.same( { "\n\n[NOTICE] hi\n\n", "[WARNING] 42" }, lines )
+		end)
+
+	end)
+
+
 end)

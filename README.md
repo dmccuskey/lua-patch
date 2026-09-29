@@ -84,11 +84,12 @@ To update, pull the repository again (`git -C lua-patch pull`).
 |---|---|
 | `addPatch( name )` | Turns on a patch, or each patch in an array of names. With no argument, all three. Turning on a patch that's already on does nothing. |
 | `addAllPatches()` | Turns on all three. |
-| `removePatch( name )` | Turns off a patch, or each in an array. With no argument, `string-format` and `table-pop` (not `print-output`). |
-| `removeAllPatches` | Broken: see [Known Issues](#known-issues). Use `removePatch()`. |
+| `removePatch( name )` | Turns off a patch, or each in an array. With no argument, all three. |
+| `removeAllPatches()` | Turns off all three. |
 | `PATCH_STRING_FORMAT`, `PATCH_TABLE_POP`, `PATCH_PRINT_OUTPUT` | The names: `'string-format'`, `'table-pop'`, `'print-output'`. |
+| `__version` | The module's version, `'0.4.0'`. |
 
-An unknown name, or an argument that isn't a string, an array or `nil`, raises an error.
+An unknown name (`unknown patch name 'x'`), or an argument that isn't a string, an array or `nil`, raises an error.
 
 ### `string-format`
 
@@ -99,7 +100,7 @@ print( "%X" % 2049043 )           --> 1F4413
 print( "%-6s|" % 'ab' )           --> ab    |
 ```
 
-`fmt % nil` returns `fmt` unchanged. Strings that hold numbers keep their arithmetic: `'100' % 7` is `2`, not a format.
+`fmt % nil` returns `fmt` unchanged. A `nil` in the array is passed on, not the end of it (though Lua 5.1's `string.format()` rejects a `nil` value). Strings that hold numbers keep their arithmetic: `'100' % 7` is `2`, not a format.
 
 ### `table-pop`
 
@@ -115,17 +116,14 @@ Adds two globals, `pnotice( message, params )` and `pwarn( message, params )`, w
 
 ## Known Issues
 
-- **`removeAllPatches` is `nil`**: the module exports a misspelled function (`removeAllLuaPatch`), so calling it errors with `attempt to call field 'removeAllPatches' (a nil value)`. Were the name fixed, the function would turn the patches on, not off: it calls `addAllLuaPatches()`.
 - **Patches are global, and nothing counts who uses them.** `removePatch()` turns a patch off for the whole program, including libraries that turned it on and still need it.
 - **The on/off lines can't be silenced**: `string-format` and `table-pop` always print `Lua Patch::activating patch ...`. `print-output` prints nothing.
-- **An unknown patch name is reported as `nil`** (`unknown patch name 'nil'`): the message uses an undefined variable.
-- `removePatch()` with no argument leaves `print-output` on.
-- `string-format` uses the global `unpack`: Lua 5.1 (and LuaJIT) only. An array with a `nil` in it may lose the values after the `nil`.
-- The version, `0.3.0`, isn't exported: it's a local in the file.
 
 ## Development
 
 Only `dmc_lua/lua_patch.lua` is written here. [DMC-Lua-Library](https://github.com/dmccuskey/DMC-Lua-Library) copies it into its `dmc_lua/` with its Snakemake build (the `Snakefile` here registers it), and the DMC Solar2D libraries copy it from there into `dmc_corona/lib/dmc_lua/`.
+
+The `%` operator's function, `stringFormatting()`, is a copy of [lua-utils](https://github.com/dmccuskey/lua-utils)' function of that name, between `--== Start: copy from lua_utils ==--` and `--== End: copy from lua_utils ==--`, so lua-patch loads on its own. A fix to one goes into the other.
 
 The tests are in `spec/lua_patch_spec.lua`, for [busted](https://lunarmodules.github.io/busted/) under Lua 5.1. From the repository's root folder:
 
@@ -136,10 +134,10 @@ busted spec
 It ends with:
 
 ```text
-5 successes / 0 failures / 0 errors / 0 pending : 0.001641 seconds
+11 successes / 0 failures / 0 errors / 0 pending : 0.002275 seconds
 ```
 
-(The progress line is mixed with the patches' on/off lines.) The tests cover `table-pop` and `string-format`, not `print-output` or the module's functions.
+(The progress line is mixed with the patches' on/off lines.) The tests cover each patch and the module's functions.
 
 ## License
 
